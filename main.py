@@ -56,7 +56,8 @@ def get_norm_vector(filename: str, chrom: str, norm: str, res: int):
 def get_difference_between_vector(file1, file2, chrom, norm, res):
     vector1 = get_norm_vector(file1, chrom, norm, res)
     vector2 = get_norm_vector(file2, chrom, norm, res)
-    return np.sum(np.abs(vector1 - vector2))
+    diff = np.abs(vector1 - vector2)
+    return np.sum(diff), np.mean(diff), np.max(diff)
 
 
 class CompareFiles:
@@ -87,20 +88,25 @@ class CompareFiles:
         print("Total error for matrices across all resolutions ", total_error)
 
     def check_all_normalizations(self):
-        total_error = 0
+        total_error, total_mu_error, total_max_error = 0, [], []
         for norm in self.norms:
-            norm_error = 0
+            norm_error, norm_mu_error, norm_max_error = 0, [], []
             for chrom in self.chromosomes:
                 for res in self.resolutions:
-                    norm_error += get_difference_between_vector(self.file1, self.file2, chrom, norm, res)
-
-            print("Chromosomes:", self.chromosomes, "Resolutions:", self.resolutions)
-            print("NORM", norm, "ERROR", norm_error)
+                    err, mu_err, max_err = get_difference_between_vector(self.file1, self.file2, chrom, norm, res)
+                    norm_error += err
+                    norm_mu_error.append(mu_err)
+                    norm_max_error.append(max_err)
+            #print("NORM", norm, "ERROR", norm_error, "MEAN ERROR", np.mean(norm_mu_error))
             total_error += norm_error
+            total_mu_error.extend(norm_mu_error)
+            total_max_error.extend(norm_max_error)
         print("Chromosomes:", self.chromosomes)
         print("Resolutions:", self.resolutions)
         print("Normalizations:", self.norms)
         print("Total error across all normalization vectors, all chromosomes, all resolutions ", total_error)
+        print("Mean error across all normalization vectors, all chromosomes, all resolutions ", np.mean(total_mu_error))
+        print("Max error across all normalization vectors, all chromosomes, all resolutions ", np.max(total_max_error))
 
 
 def test_equality(file1: str, file2: str, norms: list):
